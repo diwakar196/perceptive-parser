@@ -26,6 +26,7 @@ async def parse(file: UploadFile = File(...)):
     except Exception as e:
         return ParseResponse(
             status="error",
+            
             error=str(e),
             message="Failed to process file"
         )
