@@ -1,11 +1,22 @@
+import logging
+
+from fastapi import HTTPException
+
 storage: list[dict] = []
+
+logger = logging.getLogger(__name__)
 
 
 class PersistHandler:
 
     @staticmethod
     def save(data: dict) -> None:
-        storage.append(data)
+        try :
+            storage.append(data)
+            logger.info(f"Data saved successfully: {data}")
+        except Exception as e:
+            logger.error(f"Error while saving data: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
     @staticmethod
     def get_all() -> list[dict]:

@@ -15,8 +15,8 @@ async def root():
 if __name__ == "__main__":
     uvicorn.run(
         "src.main:app",
-        host=settings.host,
-        port=settings.port,
-        reload=settings.reload
+        host="0.0.0.0",
+        port=8000,
+        reload=True
     )
 
