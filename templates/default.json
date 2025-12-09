@@ -1,0 +1,16 @@
+{
+  "name": "default",
+  "vendor_keywords": ["invoice", "bill", "tax"],
+  "fields": {
+    "invoice_number": ["Invoice No", "Invoice Number", "Bill No", "Invoice#"],
+    "invoice_date": ["Invoice Date", "Date", "Bill Date"],
+    "gstin": ["GSTIN", "GST No", "GST Number"],
+    "buyer_name": ["Buyer", "Bill To", "Customer Name"],
+    "total_amount": ["Total", "Grand Total", "Amount"],
+    "eway_bill": ["E-Way Bill", "Eway Bill", "E-Way Bill No"],
+    "truck_no": ["Vehicle No", "Truck No", "Vehicle Number"],
+    "amount_in_words": ["Amount in Words", "Total in Words"]
+  },
+  "table_keywords": ["description", "item", "product", "hsn", "quantity", "rate", "amount"]
+}
+
