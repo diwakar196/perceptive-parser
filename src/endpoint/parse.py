@@ -1,7 +1,7 @@
 from http import HTTPStatus
 import logging
 
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, UploadFile, HTTPException, Header
 from src.models.model import ParseResponse
 from src.handler.parser import ParseHandler
 from src.handler import persist
@@ -11,8 +11,8 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/api/v1/parse", response_model=ParseResponse)
-async def parse(file: UploadFile = File(...)):
+@router.post("/api/v1/parse/basic", response_model=ParseResponse)
+async def parse_basic(file: UploadFile = File(...)):
     try:
         if file.content_type != "application/pdf":
             raise HTTPException(
@@ -67,4 +67,30 @@ async def get_by_id(id: int):
         return ParseResponse(
             status="error",
             message="Failed to get item by id"
+        )
+
+
+@router.post("/api/v1/parse", response_model=ParseResponse)
+async def parse_with_ai(
+    file: UploadFile = File(..., description="PDF file to parse"),
+    x_api_key: str = Header(
+        ..., 
+        alias="X-API-Key",
+        description="OpenAI API Key for AI-based extraction"
+    )
+):
+    try:
+        result = await ParseHandler.handle_ai_parse(file, x_api_key)
+        
+        return ParseResponse(
+            message="PDF file processed successfully with AI.",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error while AI parsing: {e}")
+        return ParseResponse(
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            message="Failed to process file with AI"
         )

@@ -260,3 +260,62 @@ class ParseHandler:
         finally:
             if file_path and file_path.exists():
                 file_path.unlink()
+
+
+    @staticmethod
+    async def handle_ai_parse(file: UploadFile, api_key: str) -> dict:
+        from src.handler.ai import AIParser
+        
+        file_path = None
+        try:
+            content = await file.read()
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+                tmp.write(content)
+                file_path = Path(tmp.name)
+            
+            BASE = Path(__file__).parent.parent.parent
+            templates_folder = BASE / "templates"
+            out_folder = BASE / "output"
+            
+            rule_based = prepare_parsing(file_path, templates_folder, out_folder)
+            
+            missing_fields = []
+            for field in ["invoice_number", "invoice_date", "gstin", "buyer_name", "total_amount", "eway_bill", "truck_no", "amount_in_words"]:
+                if not rule_based.get(field):
+                    missing_fields.append(field)
+            
+            if not rule_based.get("items") or len(rule_based.get("items", [])) == 0:
+                missing_fields.append("items")
+            
+            merged_result = rule_based.copy()
+            
+            if missing_fields:
+                logger.info(f"Missing fields from rule-based: {missing_fields}. Running AI extraction...")
+                ai_parser = AIParser(api_key=api_key)
+                ai_result = ai_parser.parse_invoice(file_path)
+                
+                for field in missing_fields:
+                    if ai_result.get(field):
+                        merged_result[field] = ai_result[field]
+                
+                merged_result["extraction_method"] = "hybrid"
+                merged_result["ai_filled_fields"] = missing_fields
+            else:
+                logger.info("All fields extracted by rule-based parsing. AI not needed.")
+                merged_result["extraction_method"] = "rule_based_only"
+            
+            persist.PersistHandler.save(merged_result)
+            
+            out_path = out_folder / (file_path.stem + ".json")
+            out_path.write_text(json.dumps(merged_result, indent=2, ensure_ascii=False), encoding="utf8")
+            logger.info(f"Updated output file: {out_path}")
+            
+            (out_folder / "results.json").write_text(json.dumps(merged_result, indent=2, ensure_ascii=False), encoding="utf8")
+            
+            return merged_result
+        except Exception as e:
+            logger.error(f"Error in AI parsing: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+        finally:
+            if file_path and file_path.exists():
+                file_path.unlink()
