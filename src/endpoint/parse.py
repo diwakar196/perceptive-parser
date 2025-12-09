@@ -1,3 +1,4 @@
+from http import HTTPStatus
 import logging
 
 from fastapi import APIRouter, File, UploadFile, HTTPException
@@ -22,17 +23,15 @@ async def parse(file: UploadFile = File(...)):
         result = await ParseHandler.handle_parse(file)
         
         return ParseResponse(
-            status="success",
-            message=f"PDF file '{result['filename']}' processed successfully. Size: {result['size']} bytes"
+            message=f"PDF file processed successfully.",
+            data=result
         )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error while parsing the file:  ={e}")
         return ParseResponse(
-            status="error",
-            
-            error=str(e),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
             message="Failed to process file"
         )
 
@@ -49,7 +48,6 @@ async def list_all():
         logger.error(f"Error while listing all items: {e}")
         return ParseResponse(
             status="error",
-            error=str(e),
             message="Failed to list items"
         )
 
@@ -68,6 +66,5 @@ async def get_by_id(id: int):
         logger.error(f"Error while getting item by id: {e}")
         return ParseResponse(
             status="error",
-            error=str(e),
             message="Failed to get item by id"
         )
